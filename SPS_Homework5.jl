@@ -21,7 +21,7 @@ function main()
 
 	# Question 2
 	println("\nSolving Question 2:")
-	#Question2()
+	Question2()
 
 	# Question 3
 	println("\nSolving Question 3:")
@@ -41,6 +41,35 @@ function main()
 
 end
 
+# Creating the functions before solving questions
+function Newton(f, f′, x_start, max_iter=200, tol=1e-8)
+	
+	x_n = x_start
+
+	for i in 1:max_iter
+
+		# Getting the y-value
+		f_x = f(x_n)
+
+		# Checking if f'(x) is zero.
+		if f′(x_n) == 0
+			return nothing
+		end
+
+		# Checking if we are within the error bounds
+		if abs(f_x) < tol
+			return x_n
+		end
+
+		# If we are not within the limit we gotta updated our guess
+		# Implimenting Newton's method
+		x_n -= f(x_n) / f′(x_n)
+	end
+
+	print("Exceeded iteration limit without solution")
+	return nothing
+end
+
 function Question1()
 
 	C = [
@@ -48,10 +77,86 @@ function Question1()
 		0 0 1 0 0;
 		0 0 0 1 0;
 		0 0 0 0 1;
-		-243.433 -191.793 -23.954 -30.319 -0.832;
+		243.433 -191.793 -23.954 30.319 0.832;
 	]
 	
-	println("Part a) \n The matrix C is: $(display(C))")
+	println("Part a) \nThe matrix C is: ")
+	display(C)
+
+	n = size(C, 1)
+    Q_total = I(n)
+
+    for k in 1:1000
+        # Built-in QR decomposition
+        Q, R = qr(C)
+        Q = Matrix(Q)   # Convert to a dense matrix
+        C = R * Q       # Form next C
+        Q_total *= Q    # Accumulate eigenvector matrix
+
+        # Convergence test: lower triangle → ~ 0
+        # tril returns the lower-triangular part of
+        if norm(tril(C, -1)) < 1e-10
+            break
+        end
+    end
+
+    # The diagonal entries of A ≈ eigenvalues
+    λ = diag(C)
+    println("Part b) \nAll eigenvalues aka roots are: $(λ)")
+
+end
+
+function Question2()
+
+	# Writing the function and derivative of the function 
+	
+	function f(x)
+		return (1+x^2)^(-1) - 1/2
+	end
+
+	function f′(x)
+		return (-2*x)/(1+2*x^2+x^4)
+	end
+
+	# Range of x-values.
+	x = -3:0.01:3
+
+	# Plot to check what the function looks like
+	p = plot([i for i in x], [f(i) for i in x], label="f(x)", lw=2, lc=:blue, xlabel="x values", ylabel="f(x) values")
+
+	# Implimenting Newton's Method
+
+	# plot the roots over the older functions
+	root = Float64[]
+	x_pos = Float64[]
+	x_neg = Float64[]
+
+	for x_start in x
+		xᶜ = Newton(f, f′, x_start)
+
+		if xᶜ === nothing
+			push!(root, x_start)
+			elseif xᶜ == 1
+				push!(x_pos, x_start)
+			elseif xᶜ == -1
+				push!(x_neg, x_start)
+			else
+				push!(root, x_start)
+		end
+	end
+
+	plot!(legend=:bottomright)
+
+	scatter!([root], [1], markershape=:cross, markeralpha=1, markersize=1, label="root ≢ ±1", markerstrokecolor=:red)
+
+	scatter!([x_pos], [1], markershape=:circle, markersize=8, label="root = 1", markerstrokecolor=:blue)
+		
+	scatter!([x_neg], [1], markershape=:utriangle, markersize=8, label="root = -1", markerstrokecolor=:black)
+
+	savefig(p, "./output/HW5/Newton's_Method_plot.png")
+    println("Saved ./output/HW5/Newton's_Method_plot.png")
+
+
 end
 
 # Same as if __name__ == '__main__'
