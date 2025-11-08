@@ -30,3 +30,5 @@ JuliaLocalPreferences.toml
 # Files
 *.png
 *.DS_Store
+*./output
+
