@@ -17,15 +17,15 @@ function main()
 
 	# Question 1
 	println("Solving Question 3:")
-	Question1()
+	#Question1()
 
 	# Question 2
 	println("\nSolving Question 2:")
-	Question2()
+	#Question2()
 
 	# Question 3
 	println("\nSolving Question 3:")
-	#Question3()
+	Question3()
 
 	# Question 4
 	println("\nSolving Question 4:")
@@ -42,6 +42,8 @@ function main()
 end
 
 # Creating the functions before solving questions
+
+# Newton's Method for question 2 and 4
 function Newton(f, f′, x_start, max_iter=200, tol=1e-8)
 	
 	x_n = x_start
@@ -68,6 +70,45 @@ function Newton(f, f′, x_start, max_iter=200, tol=1e-8)
 
 	print("Exceeded iteration limit without solution")
 	return nothing
+end
+
+# Bisection Method for question 4
+function Bisection(f, a, b, max_iters = 200, tol=1e-8)
+
+	# Compute f at the bottom of the interval
+    f_a = f(a)
+
+    # Print an initial update statement
+    println("0 ", (b+a)/2, " ", (b-a)/2)
+    x_new = NaN
+
+    # Main bisection method loop
+    for i in 1:max_itrs
+
+        # Update interval midpoint and function value
+        x_mid = (a+b) / 2.0
+        f_mid = f(x_mid)
+
+        # If f at midpoint has opposite sign to f at a, then it is the new b
+        if f_a * f_mid < 0
+            b = x_mid
+        # Otherwise the midpoint replaces a
+        else
+            a, f_a = x_mid, f_mid
+        end
+
+        # Compute the midpoint of the updated interval and compare to
+        #   the previous midpoint to see if we're close enough
+        x_new = (a+b)/2.0
+        xdiff = abs(x_new-x_mid)
+        println(i, " ", x_new, " ", xdiff)
+
+        if abs(xdiff/x_new) < tol
+            break
+        end
+    end
+
+    return x_new
 end
 
 function Question1()
@@ -155,9 +196,36 @@ function Question2()
 
 	savefig(p, "./output/HW5/Newton's_Method_plot.png")
     println("Saved ./output/HW5/Newton's_Method_plot.png")
-
-
 end
+
+function Question3()
+
+	#=
+		For bisection method we take midpoint
+		length of interval get cut in half every time. 
+		l = (b-a)/2^n
+		We want the interval to be less than 10^-16 so l = 10^-16
+
+		10^-16 = (1-0)/2^n
+
+		Now we solve for n
+
+		10^16 = 2^n
+	=#
+
+	n = log2(10^16)
+	println("The number of iterations to reach ≈1e-16 is: $(n)")
+end
+
+function Question4()
+	# Implement ridder's function first.
+
+	#= need to call bisection, newton's and ridder's method and 
+		show how many function evaluations does it take to get error
+		within 1e-6.
+	=#
+end
+
 
 # Same as if __name__ == '__main__'
 if abspath(PROGRAM_FILE) == @__FILE__
