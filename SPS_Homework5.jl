@@ -2,6 +2,7 @@
 
 using Plots
 using LinearAlgebra
+include("Question4_HW5.jl")
 
 function main()
 
@@ -25,7 +26,7 @@ function main()
 
 	# Question 3
 	println("\nSolving Question 3:")
-	Question3()
+	#Question3()
 
 	# Question 4
 	println("\nSolving Question 4:")
@@ -33,7 +34,7 @@ function main()
 
 	# Question 5
 	println("\nSolving Question 5:")
-	#Question5()
+	Question5()
 
 	# Question 6
 	println("\nSolving Question 6:")
@@ -60,12 +61,14 @@ function Newton(f, f′, x_start, max_iter=200, tol=1e-8)
 
 		# Checking if we are within the error bounds
 		if abs(f_x) < tol
-			return x_n
+			return x_n, i
 		end
 
 		# If we are not within the limit we gotta updated our guess
 		# Implimenting Newton's method
 		x_n -= f(x_n) / f′(x_n)
+
+		#println(i, " ", x_n,)
 	end
 
 	print("Exceeded iteration limit without solution")
@@ -73,17 +76,17 @@ function Newton(f, f′, x_start, max_iter=200, tol=1e-8)
 end
 
 # Bisection Method for question 4
-function Bisection(f, a, b, max_iters = 200, tol=1e-8)
+function Bisection(f, a, b, max_iter=200, tol=1e-8)
 
 	# Compute f at the bottom of the interval
     f_a = f(a)
 
     # Print an initial update statement
-    println("0 ", (b+a)/2, " ", (b-a)/2)
+    #println("0 ", (b+a)/2, " ", (b-a)/2)
     x_new = NaN
 
     # Main bisection method loop
-    for i in 1:max_itrs
+    for i in 1:max_iter
 
         # Update interval midpoint and function value
         x_mid = (a+b) / 2.0
@@ -101,14 +104,13 @@ function Bisection(f, a, b, max_iters = 200, tol=1e-8)
         #   the previous midpoint to see if we're close enough
         x_new = (a+b)/2.0
         xdiff = abs(x_new-x_mid)
-        println(i, " ", x_new, " ", xdiff)
+        #println(i, " ", x_new, " ", xdiff)
 
         if abs(xdiff/x_new) < tol
+        	return (x_new, i)
             break
         end
     end
-
-    return x_new
 end
 
 function Question1()
@@ -214,18 +216,83 @@ function Question3()
 	=#
 
 	n = log2(10^16)
-	println("The number of iterations to reach ≈1e-16 is: $(n)")
+	println("The number of iterations to reach ϵ≈1e-16 is: $(n)")
 end
 
 function Question4()
-	# Implement ridder's function first.
 
-	#= need to call bisection, newton's and ridder's method and 
-		show how many function evaluations does it take to get error
-		within 1e-6.
-	=#
+	# Writing the function
+	# The root according to desmos is x = 0.7032
+	function f(x)
+		return ℯ^x - 2 - 0.01/(x^2) + 2e-6/(x^3)
+	end
+
+	function f′(x)
+		return ℯ^x + 2(0.01)/x^3 - 3(2e-6)/(x^4)
+	end
+
+	# Writing out the intervals
+	I₁ = [0.01, 3]
+	I₂ = [0.01, 9]
+	I₃ = [0.01, 27]
+	I₄ = [0.01, 81]
+
+	# Need to show for each iterval how many evaluations it takes to get the root
+
+	# Implementing Bisection method
+	I₁_x_bis, I₁_n_bis = Bisection(f, 0.01, 3, 200, 1e-6)
+	I₂_x_bis, I₂_n_bis = Bisection(f, 0.01, 9, 200, 1e-6)
+	I₃_x_bis, I₃_n_bis = Bisection(f, 0.01, 27, 200, 1e-6)
+	I₄_x_bis, I₄_n_bis = Bisection(f, 0.01, 81, 200, 1e-6)
+
+
+	println("\nRoot and iteration per interval for bisection method:")
+	@info  "Interval = $(I₁)" I₁_x_bis I₁_n_bis
+	@info  "Interval = $(I₂)" I₂_x_bis I₂_n_bis
+	@info  "Interval = $(I₃)" I₃_x_bis I₃_n_bis
+	@info  "Interval = $(I₄)" I₄_x_bis I₄_n_bis
+
+	# Implementing Newton's method
+
+	# will need midpoint per interval
+	m₁ = (3+0.01)/2
+	I₁_x_new, I₁_n_new = Newton(f, f′, m₁, 200, 1e-6)
+
+	m₂ = (9+0.01)/2
+	I₂_x_new, I₂_n_new = Newton(f, f′, m₂, 200, 1e-6)
+
+	m₃ = (27+0.01)/2
+	I₃_x_new, I₃_n_new = Newton(f, f′, m₃, 200, 1e-6)
+
+	m₄ = (81+0.01)/2
+	I₄_x_new, I₄_n_new = Newton(f, f′, m₃, 200, 1e-6)
+
+	println("\nRoot and iteration per interval for Newton's method:")
+	@info  "Interval = $(I₁)" I₁_x_new I₁_n_new
+	@info  "Interval = $(I₂)" I₂_x_new I₂_n_new
+	@info  "Interval = $(I₃)" I₃_x_new I₃_n_new
+	@info  "Interval = $(I₄)" I₄_x_new I₄_n_new
+
+	# Implementing Ridders' Method
+
+	I₁_x_rid, I₁_n_rid = ridders(f, 0.01, 3, 200, 1e-6)
+	I₂_x_rid, I₂_n_rid = ridders(f, 0.01, 9, 200, 1e-6)
+	I₃_x_rid, I₃_n_rid = ridders(f, 0.01, 27, 200, 1e-6)
+	I₄_x_rid, I₄_n_rid = ridders(f, 0.01, 81, 200, 1e-6)
+
+
+	println("\nRoot and iteration per interval for Ridder's method:")
+	@info  "Interval = $(I₁)" I₁_x_rid I₁_n_rid
+	@info  "Interval = $(I₂)" I₂_x_rid I₂_n_rid
+	@info  "Interval = $(I₃)" I₃_x_rid I₃_n_rid
+	@info  "Interval = $(I₄)" I₄_x_rid I₄_n_rid
 end
 
+function Question5()
+
+	
+
+end
 
 # Same as if __name__ == '__main__'
 if abspath(PROGRAM_FILE) == @__FILE__
