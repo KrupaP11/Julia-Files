@@ -4,55 +4,75 @@
 
 # implement this function below
 
+function ridders(f, a, b, max_itrs, tol=1e-6)
 
-#=
+	# Make sure that x0 < x1
 
-f ridders(f,a,b,max_itrs=200,tol=1e-8):
-# Ensure that x0 < x1
-if a < b:
-x0 = a
-x1 = b
-else:
-x0 = b
-x1 = a
-# Compute the function at the two endpoints and make sure they bracket
-# a root
-f0 = f(x0)
-f1 = f(x1)
-if f0 == 0.0:
-return x0
-elif f1 == 0.0:
-return x1
-if f0*f1 > 0.0:
-raise Exception("Starting points for Ridders’ rule must bracket root")
-# Main Ridders’ method loop
-for i in range(max_itrs):
-# Find the midpoint of the interval
-x2 = (x0+x1)/2.0
-f2 = f(x2)
-# Apply Ridders’ formula to get x3
-x3 = x2 + (x1-x2)*(f2/f0)/sqrt((f2/f0)**2-(f1/f0))
-f3 = f(x3)
-print(i,x3)
-# Check to see if we can return: we took a very small step or
-# our latest guess evaluates to 0
-if abs(x3-x2) < tol or f3 == 0.0:
-return x3
-# Bracket the root as tightly as possible
-if f3*f2 < 0.0:
-# The root lies between x2 and x3, so set that as the interval for
-# the next iteration
-x0 = x2; f0 = f2
-x1 = x3; f1 = f3
-else:
-# f3 and f2 have same sign, so x3 and x2 don’t bracket the root.
-# Check whether f0 or f1 is the other endpoint
-if f3*f1 < 0.0:
-# x3 and x1 bracket the root, so replace x0 with x3
-x0 = x3; f0 = f3
-else:
-# x3 and x0 bracket the root, so replace x1 with x3
-x1 = x3; f1 = f3
-print("Exceeded iteration limit without solution")
-return None
-=#
+	if a < b
+		x₀ = a
+		x₁ = b
+		else
+			x₀ = b
+			x₁ = a
+	end
+
+	# Compute the function at the two endpoints and make sure 
+	#	they bracket a root
+
+	f₀ = f(x₀)
+	f₁ = f(x₁)
+
+	if f₀ == 0.0
+		return x₀
+	elseif f₁ == 0.0
+		return x₁
+	end
+
+	# Throw an error if the root isn't bracketed
+	if f₀*f₁ > 0.0
+		error("Starting poitns for Ridder's rule must bracket the root")
+	end
+
+	# Main Ridders' method loop
+
+	for i in 1:max_itrs
+		# Find the midpoint of the interval
+
+		x₂ = (x₀+x₁)/2.0
+
+		f₂ = f(x₂)
+
+		# Apply Ridders' formula to get x_3
+		x₃ = x₂ + (x₁-x₂)*(f₂/f₀) / sqrt((f₂/f₀)^2 - (f₁/f₀))
+		f₃ = f(x₃)
+		#println(i, x₃)
+
+		# Check to see if we can return: we took a very small step 
+		#	or out lastest guess evaluates to 0
+		if abs(x₃-x₂) < tol || f₃ == 0.0
+			return x₃, i
+		end
+
+		# Bracket the root as tightly as possible
+		if f₃*f₂ < 0.0
+			# if this is the case then the root lies between x2 and x3, 
+			#	so we set that as the interval for the next iteration
+
+			x₀ = x₂; f₀ = f₂
+			x₁ = x₃; f₁ = f₃
+		else
+			# f3 and f2 have the same sign so x3 adn x2 don't bracket the root.
+			#	Check whether f0 or f1 is the other endpoint
+			if f₃*f₁ < 0.0
+				# x3 and x1 bracket the root, so replace x0 with x3
+				x₀ = x₃; f₀ = f₃
+			else
+				# x3 and x0 bracket the root, so replace x1 with x3
+				x₁ = x₃; f₁ = f₃
+			end
+		end
+	end
+	println("Exceeded iteration limit wihtout solution")
+	return nothing
+
+end
