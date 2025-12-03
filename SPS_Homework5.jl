@@ -1,6 +1,8 @@
 # SPS 5100 Research Techniques - Homework 5
 
 using Plots
+gr()
+using Statistics
 using LinearAlgebra
 include("Question4_HW5.jl")
 
@@ -17,28 +19,31 @@ function main()
 	end
 
 	# Question 1
-	println("Solving Question 3:")
-	#Question1()
+	println("Solving Question 1:")
+	Question1()
 
 	# Question 2
 	println("\nSolving Question 2:")
-	#Question2()
+	Question2()
 
 	# Question 3
 	println("\nSolving Question 3:")
-	#Question3()
+	Question3()
 
 	# Question 4
 	println("\nSolving Question 4:")
-	#Question4()
+	Question4()
 
 	# Question 5
-	println("\nSolving Question 5:")
-	Question5()
+	println("\nSolving Question 5 - part a:")
+	Question5_part_a()
+	
+	println("\nSolving Question 5 - part b:")
+	Question5_part_b()
 
 	# Question 6
 	println("\nSolving Question 6:")
-	#Question6()
+	Question6()
 
 end
 
@@ -65,7 +70,7 @@ function Newton(f, f′, x_start, max_iter=200, tol=1e-8)
 		end
 
 		# If we are not within the limit we gotta updated our guess
-		# Implimenting Newton's method
+		# Implementing Newton's method
 		x_n -= f(x_n) / f′(x_n)
 
 		#println(i, " ", x_n,)
@@ -113,6 +118,22 @@ function Bisection(f, a, b, max_iter=200, tol=1e-8)
     end
 end
 
+# For Simpson's Rule
+function simpson(f, a, b, n)
+	# Checking if n is odd if add 1 to make it even
+	if n % 2 == 1
+		n += 1
+	end
+
+	# Computing the sum
+	h = (b - a)/n
+	x = range(a, stop=b, length=n+1)
+	y = f.(x)
+	coefficients = vcat([1], [i%2 == 1 ? 4 : 2 for i in 2:n], [1])
+	
+	return (h/3) * sum(coefficients .* y)
+end
+
 function Question1()
 
 	C = [
@@ -146,7 +167,6 @@ function Question1()
     # The diagonal entries of A ≈ eigenvalues
     λ = diag(C)
     println("Part b) \nAll eigenvalues aka roots are: $(λ)")
-
 end
 
 function Question2()
@@ -167,7 +187,7 @@ function Question2()
 	# Plot to check what the function looks like
 	p = plot([i for i in x], [f(i) for i in x], label="f(x)", lw=2, lc=:blue, xlabel="x values", ylabel="f(x) values")
 
-	# Implimenting Newton's Method
+	# Implementing Newton's Method
 
 	# plot the roots over the older functions
 	root = Float64[]
@@ -237,7 +257,7 @@ function Question4()
 	I₃ = [0.01, 27]
 	I₄ = [0.01, 81]
 
-	# Need to show for each iterval how many evaluations it takes to get the root
+	# Need to show for each interval how many evaluations it takes to get the root
 
 	# Implementing Bisection method
 	I₁_x_bis, I₁_n_bis = Bisection(f, 0.01, 3, 200, 1e-6)
@@ -288,10 +308,256 @@ function Question4()
 	@info  "Interval = $(I₄)" I₄_x_rid I₄_n_rid
 end
 
-function Question5()
+function Question5_part_a()
 
+	println("\nWorking on part a)")
+
+	#defining the constants
+	c = 3*10^8
+	h = 6.626*10^(-34)
+	kB = 1.380649*10^(-23)
+
+	function I(λ, T)
+
+		# lambda.^(-5) dot is needed because we are treating lambda as vector.\
+		β = (h*c) ./ (λ .* kB .* T)
+
+		#Implement an if statement for e^50
+		# Since \beta is a vector cause \lambda is a vector need to handle this differently.
+
+		# For β > 50, exp(β) ≈ huge, so denominator ≈ exp(β)
+		denom = @. ifelse(β > 50, exp(β), exp(β) - 1)
+		return 2 * π * h * c^2 .* λ.^(-5) ./ denom
+	end
+
+	# Determining the range of temperature in Kelvin
+	# adding units cause of the package
+	T = 2700:100:10000
+
+	# Using Wein's displacement law: \lambda_max = b/T
+	#	We get the range for wavelengths
+
+	#λ = 200:100:2000 # in linear space[nm]
+	# Wavelength range (in meters)
+    λ = range(1e-7, 3e-6, length=10000)
+
+	# matrix for lambda max
+	λ_max = Float64[]
+
+	for i in T
+
+		# Going through all the wavelengths
+		Intensity = I.(λ, i)
+
+		# Get the lambda max for that temperature
+		λ_max_T = λ[argmax(Intensity)]
+
+		push!(λ_max, λ_max_T)
+	end
+
+	T_log = log10.(T)
+	λ_log = log10.(λ_max)
+
+	# TODO Change the axis labels
+	p = plot(T_log, λ_log, lw=2, lc=:blue)
+    plot!(title="Temperature vs. Wavelength log plot", xlabel="log(Temperature) [K]", ylabel="log(λ_max) [m]")
+
+    # Build the design matrix [x 1]
+	X = [T_log ones(length(T_log))]
 	
+	# Solve least squares: β = [slope, intercept]
+	β = X \ λ_log
+	slope, intercept = β[1], β[2]
+	λ_log_fit = intercept .+ slope .* T_log
+	
+	println("Slope = ", slope)
+	println("Intercept = ", intercept)
+	println("Estimated b = ", 10^intercept, " m·K")
 
+	plot!(T_log, λ_log_fit, lw=1, lc=:red, ls=:dash, label="Fitted curve, slope=$(round(slope, digits=9))")
+
+    savefig(p, "./output/HW5/Weins_Displacement.png")
+    println("Saved ./output/HW5/Weins_Displacement.png\n")
+end
+
+function Question5_part_b()
+
+	println("\nWorking on part b)")
+
+	#defining the constants
+	c = 3*10^8
+	h = 6.626*10^(-34)
+	kB = 1.380649*10^(-23)
+
+    λ₁ = 390e-9
+    λ₂ = 750e-9
+
+    # Coding x^3/(e^x - 1)
+    #f(x) = x^3 / (exp(x) - 1)
+
+    function f(x)
+    	# For x > 50, e^(x) ≈ huge, so denominator ≈ e^(β)
+		denom = @. ifelse(x > 50, exp(x), exp(x) - 1)
+		return x^3 ./ denom
+    end
+
+    function η(T)
+    	x₁ =  h * c/(λ₂ * kB * T)
+    	x₂ = h * c/(λ₁ * kB * T)
+
+    	I = simpson(f, x₁, x₂, 10000)
+    	return I * 15/(pi^4)
+    end
+
+    function golden_ratio(f, a, b, tol=1e-1)
+    	ϕ = (sqrt(5) + 1) / 2
+    	c = b - (b-a) / ϕ
+    	d = a + (b-a) / ϕ
+
+    	f_c = f(c)
+    	f_d = f(d)
+
+    	while abs(b - a) > tol
+    		if f_c > f_d
+    			a = c
+    			c = d
+    			f_c = f_d
+    			d = a + (b - a)/ϕ
+    			f_d = f(d)
+    		else 
+    			# f(c) < f(d)
+    			b = d
+    			d = c
+    			f_d = f_c
+    			c = b - (b - a)/ϕ
+    			f_c = f(c)
+    		end
+    	end
+
+    	if f_c > f_d
+
+    		return (a+c)/2, f((a+c)/2)
+    	else
+    		return (b+d)/2, f((b+d)/2)
+    	end
+
+    end
+
+	T_best, η_best = golden_ratio(η, 2700, 10000)
+
+	println("Temperature for maximum efficiency: $(T_best)")
+	println("Visible efficiency at the that temperature: $(η_best)")
+
+	T = 2700:100:10000
+
+	p = plot(T, [η(i) for i in T], lw=2, lc=:blue, xlabel="Temperature [K]", ylabel="Efficiency of Blackbody",
+		title="Efficiency vs. Temperature")
+
+	savefig(p, "./output/HW5/Efficiency_Temperature.png")
+    println("Saved ./output/HW5/Efficiency_Temperature.png\n")
+
+end
+
+function Question6()
+	
+	# Implementing given function
+	function f(x₀, x₁)
+		return x₀^2 - 2*x₀ + x₁^4 - 2x₁^2 + x₁
+	end
+
+	∇f(x₀, x₁) = [2*x₀ - 2;
+				4*x₁^3 - 4*x₁ + 1]
+
+	println("\nWorking on part a)")
+	println("The partial derivative with respect to x₀ is: 
+		\n 2x₀-2 = 0 ⟹  x₀ = 1")
+	println("The partial derivative with respect to x₁ is: 
+		\n 4x₁^3 - 4x₁ + 1 ⟹  x₁ = {-1.1072, 0.2696, 0.8376}")
+
+	println("Working on part b)")
+
+	x₀_range = 0:0.5:2
+	x₁_range = -1.5:1:1.5
+
+	Z = [f(x₀, x₁) for x₁ in x₁_range, x₀ in x₀_range]
+
+	#X0 = repeat(reshape(x₀, 1, :), length(x₁), 1)  
+	#X1 = repeat(reshape(x₁, :, 1), 1, length(x₀))
+
+	# Getting the output values from the function
+	#Z = f.(X0, X1)
+
+	p = plot(
+        x₀_range, x₁_range, Z,
+        st = :surface,
+        c = :plasma,
+        alpha = 0.8,         # make it slightly transparent
+        line_z = Z,          # adds wireframe lines
+        lw = 0.5,
+        xlabel = "x₀",
+        ylabel = "x₁",
+        zlabel = "f(x₀, x₁)",
+        title = "Surface Plot of f(x₀, x₁)",
+        zlims=(-2, 3),
+        camera = (60, 30)
+    )
+
+    savefig(p, "./output/HW5/2-D_Graph.png")
+    println("Saved ./output/HW5/2-D_Graph.png")
+
+    println("Working on part c)")
+
+    I_1 = [1.0, 0.26]
+    I_2 = [1.0, 0.27]
+
+    # Gradient descent method
+
+    function gradient_descent(a, b; γ=0.01, tol=1e-8, max_iter=1000)
+    	x = [a, b]
+    	path = [copy(x)]
+
+    	for i in 1:max_iter
+    		g = ∇f(x[1], x[2])
+    		x_new = x .- γ .* g
+    		push!(path, copy(x_new))
+
+    		# if the new x_value and the old are within the error
+    		#	or if the gradient is within the error return the path
+        	if norm(x_new .- x) < tol || norm(g) < tol
+            	return path
+        	end
+        	x = x_new
+    	end
+    	return path
+	end
+
+	path_a = gradient_descent(1.0, 0.26)
+	path_b = gradient_descent(1.0, 0.27)
+
+	#z_starts = [f(I_1[1], I_1[2]), f(I_2[1], I_2[2])]
+
+	# Convert paths to arrays for plotting
+	#xa = [p[1] for p in path_a]; ya = [p[2] for p in path_a]; za = f.(xa, ya)
+	#xb = [p[1] for p in path_b]; yb = [p[2] for p in path_b]; zb = f.(xb, xb)
+
+	xa, ya = [p[1] for p in path_a], [p[2] for p in path_a]
+    xb, yb = [p[1] for p in path_b], [p[2] for p in path_b]
+    za, zb = f.(xa, ya), f.(xb, yb)
+	
+	# Overlay paths (lines + points). Use different markers/colors.
+	plot3d!(xa, ya, za; lw=2, marker=:circle, ms=3, label="path a (1.0, 0.26)", color=:red)
+	plot3d!(xb, yb, zb; lw=2, marker=:diamond, ms=3, label="path b (1.0, 0.27)", color=:green)
+
+	# also mark starting points and final points
+	scatter3d!([1.0, 1.0], [0.26, 0.27], [f(1.0, 0.26), f(1.0, 0.27)];
+        marker=:star5, ms=8, color=:yellow, label="starts")
+    scatter3d!([last(path_a)[1], last(path_b)[1]],
+        [last(path_a)[2], last(path_b)[2]],
+        [f(last(path_a)[1], last(path_a)[2]), f(last(path_b)[1], last(path_b)[2])];
+        marker=:x, ms=8, color=:blue, label="finals")
+
+	savefig(p, "./output/HW5/2-D_Graph_path.png")
+    println("Saved ./output/HW5/2-D_Graph_path.png")
 end
 
 # Same as if __name__ == '__main__'
